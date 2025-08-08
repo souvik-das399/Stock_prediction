@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stock Prediction Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+  <style>
+    body {
+      background-color: rgb(0, 0, 103);
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    select, button {
+      padding: 10px;
+      margin: 10px 0;
+      width: 300px;
+    }
+
+    #result {
+      margin-top: 30px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      color: aliceblue;
+    }
+
+    th {
+      background-color: #f4f4f4;
+      color: black !important;
+      
+    }
+
+    img {
+      max-width: 100%;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="container justify-content-center align-items-center h-100">
+  <h2 style="color: whitesmoke;">📈 Stock Prediction Dashboard</h2>
+
+  <!-- Model Dropdown -->
+  <label for="model" style="color: aliceblue;">Select Model:</label><br>
+  <select id="model">
+    <option value="">-- Choose Model --</option>
+    <option value="IT">IT</option>
+    <option value="business">Business</option>
+    <option value="automobile">Automobile</option>
+    <option value="semiconductor">Semiconductor</option>
+    <option value="Telecom">Telecom</option>
+  </select>
+
+  <br>
+
+  <!-- Company Dropdown -->
+  <label for="company" style="color: aliceblue;">Select Company:</label><br>
+  <select id="company">
+    <option value="">-- Choose Company --</option>
+  </select>
+
+  <br>
+
+  <button onclick="predict()">🔍 Predict</button>
+
+  <div id="result"></div>
+</div>
+  <script>
+    // Pre-grouped mapping of models → tickers and names
+    const modelToCompanies = {
+      IT: {
+        "AAPL": "Apple",
+        "MSFT": "Microsoft",
+        "GOOGL": "Google",
+        "AMZN": "Amazon",
+        "META": "Meta"
+      },
+      semiconductor: {
+        "NVDA": "Nvidia",
+        "INTC": "Intel",
+        "AMD": "AMD",
+        "TSM": "TSMC",
+        "QCOM": "Qualcomm",
+        "TXN": "Texas Instruments",
+        "MU": "Micron",
+        "ASML": "ASML"
+      },
+      automobile: {
+        "TSLA": "Tesla",
+        "GM": "General Motors",
+        "F": "Ford",
+        "TM": "Toyota",
+        "RACE": "Ferrari",
+        "HMC": "Honda",
+        "NSANY": "Nissan",
+        "VWAGY": "Volkswagen"
+      },
+      business: {
+        "JPM": "JPMorgan Chase",
+        "BAC": "Bank of America",
+        "WFC": "Wells Fargo",
+        "C": "Citigroup",
+        "GS": "Goldman Sachs",
+        "MS": "Morgan Stanley",
+        "AXP": "American Express",
+        "V": "Visa",
+        "MA": "Mastercard",
+        "PYPL": "PayPal"
+      },
+      Telecom: {
+        "T": "AT&T",
+        "VZ": "Verizon",
+        "TMUS": "T-Mobile",
+        "DTEGY": "Deutsche Telekom",
+        "VOD": "Vodafone",
+        "AMX": "América Móvil",
+        "NTTYY": "NTT Docomo",
+        "RELIANCE.NS": "Reliance Jio"
+      }
+    };
+
+    
+    document.getElementById("model").addEventListener("change", function () {
+      const model = this.value;
+      const companySelect = document.getElementById("company");
+      companySelect.innerHTML = `<option value="">-- Choose Company --</option>`;
+
+      if (model && modelToCompanies[model]) {
+        for (const [ticker, name] of Object.entries(modelToCompanies[model])) {
+          const option = document.createElement("option");
+          option.value = ticker;
+          option.textContent = name;
+          companySelect.appendChild(option);
+        }
+      }
+    });
+
+    
+    function predict() {
+      const ticker = document.getElementById("company").value;
+      if (!ticker) {
+        alert("Please select a company.");
+        return;
+      }
+
+      fetch(`/predict?company=${encodeURIComponent(ticker)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            document.getElementById("result").innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+          } else {
+            
+            let tableHTML = `
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Predicted Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+            `;
+
+            data.table.forEach(row => {
+              tableHTML += `
+                <tr>
+                  <td>${row.date}</td>
+                  <td>${row.price.toFixed(2)}</td>
+                </tr>
+              `;
+            });
+
+            tableHTML += `</tbody></table>`;
+
+            document.getElementById("result").innerHTML = `
+              <h3>📊 Prediction for ${ticker}</h3>
+              <img src="data:image/png;base64,${data.plot}">
+              ${tableHTML}
+            `;
+          }
+        })
+        .catch(err => {
+          document.getElementById("result").innerHTML = `<p style="color:red;">Server error: ${err.message}</p>`;
+        });
+    }
+  </script>
+
+</body>
+</html>
